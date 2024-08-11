@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Text;
+﻿using System.Text;
 using MediatR;
 using MicroRabbit.Domain.Bus;
 using MicroRabbit.Domain.Commands;
