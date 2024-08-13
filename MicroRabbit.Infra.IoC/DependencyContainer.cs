@@ -8,6 +8,13 @@ using MicroRabbit.Banking.Domain.Commands;
 using MicroRabbit.Banking.Domain.Interfaces;
 using MicroRabbit.Domain.Bus;
 using MicroRabbit.Infra.Bus;
+using MicroRabbit.Transfer.Application.Interfaces;
+using MicroRabbit.Transfer.Application.Services;
+using MicroRabbit.Transfer.Data.Context;
+using MicroRabbit.Transfer.Data.Repository;
+using MicroRabbit.Transfer.Domain.EventHandlers;
+using MicroRabbit.Transfer.Domain.Interfaces;
+using MicroRabbit.Transfer.Domain.Events;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MicroRabbit.Infra.IoC
@@ -17,16 +24,30 @@ namespace MicroRabbit.Infra.IoC
     public static void RegisterServices(IServiceCollection services)
     {
       // Domain Bus
-      services.AddTransient<IEventBus, RabbitMQBus>();
+      services.AddSingleton<IEventBus, RabbitMQBus>(x =>
+      {
+        var scopeFactory = x.GetRequiredService<IServiceScopeFactory>();
+        return new RabbitMQBus(x.GetService<IMediator>(), scopeFactory);
+      });
+
+      // Subscriptions
+      services.AddTransient<TransferEventHandler>();
 
       // Domain Banking Commands
       services.AddTransient<IRequestHandler<CreateTransferCommand, bool>, TransferCommandHandler>();
+
+      // Domain Events
+      services.AddTransient<IEventHandler<TransferCreatedEvent>, TransferEventHandler>();
       // Application Services
       services.AddTransient<IAccountService, AccountService>();
+      services.AddTransient<ITransferService, TransferService>();
 
       // Data
       services.AddTransient<IAccountRepository, AccountRepository>();
+      services.AddTransient<ITransferRepository, TransferRepository>();
+
       services.AddTransient<BankingDbContext>();
+      services.AddTransient<TransferDbContext>();
     }
   }
 }
